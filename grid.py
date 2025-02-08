@@ -166,7 +166,11 @@ def update_potential_cells_around(grid, grid_position, potential_cells):
         if is_valid_cell(cell):
             if grid[cell[0]][cell[1]] is Cell_Type.EMPTY:
                 new_potential_cells.append(cell)
-    return new_potential_cells
+    sorted_potential_cells = sorted(new_potential_cells, 
+                                    key=lambda cell: max(abs(cell[0]-grid_position[0]),
+                                                         abs(cell[1]-grid_position[1])))
+    # print(f'sorted {sorted_potential_cells}')
+    return sorted_potential_cells
 def minimax_alpha_beta_pruning(level, alpha, beta, grid, last_move, potential_cells):
     ai_play = Cell_Type.EMPTY
     if last_move['type'] == Cell_Type.BLACK:
@@ -398,7 +402,6 @@ def check_ending_move(grid, last_move):
     elif last_move['type'] is Cell_Type.WHITE:
         final_result['state'] = Game_State.WAIT_BLACK
     return final_result
-
 
 def is_valid_cell(grid_position):
     if grid_position[0] < 0 or grid_position[0] > 15 - 1:

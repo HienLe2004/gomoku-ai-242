@@ -8,6 +8,7 @@ class Cell_Type(Enum):
 class Cell:
     black_color = (20, 20, 20)
     white_color = (250, 250, 250)
+    highlight_color = (255, 0, 0)
     grid_color = (0, 0, 0)
     def __init__(self, grid, grid_position=(0, 0), size=(50, 50), value=0):
         self.size = size
@@ -38,14 +39,20 @@ class Cell:
         if self.type == Cell_Type.BLACK:
             pygame.draw.circle(surface=self.grid.grid_surf, color=self.black_color, center=self.position, radius=self.size[0] * 0.3)
             font = pygame.font.Font('freesansbold.ttf', int(self.size[0]*0.2))
-            text = font.render(str(self.number), True, Cell.white_color)
+            text_color = Cell.white_color
+            if self.grid.last_move['position'] == self.grid_position:
+                text_color = Cell.highlight_color
+            text = font.render(str(self.number), True, text_color)
             text_rect = text.get_frect(center=self.position)
             self.grid.grid_surf.blit(text, text_rect)
             self.is_drawn = 1    
         elif self.type == Cell_Type.WHITE:
             pygame.draw.circle(surface=self.grid.grid_surf, color=self.white_color, center=self.position, radius=self.size[0] * 0.3)
             font = pygame.font.Font('freesansbold.ttf', int(self.size[0]*0.2))
-            text = font.render(str(self.number), True, Cell.black_color)
+            text_color = Cell.black_color
+            if self.grid.last_move['position'] == self.grid_position:
+                text_color = Cell.highlight_color
+            text = font.render(str(self.number), True, text_color)
             text_rect = text.get_frect(center=self.position)
             self.grid.grid_surf.blit(text, text_rect)
             self.is_drawn = 1    
