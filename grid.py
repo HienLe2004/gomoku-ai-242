@@ -17,7 +17,10 @@ class Evaluate_Sequence(Enum):
     BLACK_3 = 100_000
     BLACK_2 = 1_000
     BLACK_1 = 10
-    COEFFICIENT = 2
+    COEFFICIENT = 3
+HIGHEST_TREE_LEVEL = 4
+TIME_LIMIT = 60
+ai_timer = 0
 
 class Grid:
     def __init__(self, screen, grid_size=(10, 10), cell_size=(50, 50), position=(300, 300)):
@@ -91,6 +94,7 @@ class Grid:
                 self.cells[cell[0]][cell[1]].is_potential = True   
 
     def handle_AI(self):
+        global ai_timer
         ai_play = Cell_Type.EMPTY
         if self.state == Game_State.WAIT_BLACK:
             ai_play = Cell_Type.BLACK
@@ -102,8 +106,9 @@ class Grid:
             if self.white_AI:
                 print("#AI-white is choosing the best move....")
                 grid = [[cell.type for cell in row] for row in self.cells]
+                ai_timer = time.time()
                 start_time = time.time()
-                result = minimax_alpha_beta_pruning(level=4,
+                result = minimax_alpha_beta_pruning(level=HIGHEST_TREE_LEVEL,
                                                     alpha=-Evaluate_Sequence.BLACK_5_2.value*4,
                                                     beta=Evaluate_Sequence.BLACK_5_2.value*4,
                                                     grid=grid,
@@ -113,13 +118,15 @@ class Grid:
                 thinking_time = end_time - start_time
                 print(f'Thinking time: {thinking_time:.4f}')
                 print(result)
-                self.play_at(result['move'][0])
+                # self.play_at(result['move'][0])
+                self.play_at(result['move'][random.randint(0, len(result['move']) - 1)])
         elif ai_play is Cell_Type.BLACK:
             if self.black_AI:
                 print("#AI-black is choosing the best move....")
                 grid = [[cell.type for cell in row] for row in self.cells]
+                ai_timer = time.time()
                 start_time = time.time()
-                result = minimax_alpha_beta_pruning(level=4,
+                result = minimax_alpha_beta_pruning(level=HIGHEST_TREE_LEVEL,
                                                     alpha=-Evaluate_Sequence.BLACK_5_2.value*4,
                                                     beta=Evaluate_Sequence.BLACK_5_2.value*4,
                                                     grid=grid,
@@ -129,7 +136,8 @@ class Grid:
                 thinking_time = end_time - start_time
                 print(f'Thinking time: {thinking_time:.4f}')
                 print(result)
-                self.play_at(result['move'][0])
+                # self.play_at(result['move'][0])
+                self.play_at(result['move'][random.randint(0, len(result['move']) - 1)])
 
     def draw(self):
         self.grid_surf.fill((135,62,35))
@@ -195,16 +203,24 @@ def minimax_alpha_beta_pruning(level, alpha, beta, grid, last_move, potential_ce
             child_last_move = {"position":potential_cell,"type":ai_play,"number":last_move['number']+1}
             child_result = minimax_alpha_beta_pruning(level - 1, alpha, beta, child_grid, 
                                                             child_last_move, child_potential_cells)
+            #Get last best result each level
+            # if child_result['value'] > best_value:
+            #     best_value = child_result['value']
+            #     best_move = [potential_cell]
+            #     if child_result["move"] != None:
+            #         for move in child_result['move']:
+            #             best_move.append(move)
+            #Get all best result
             if child_result['value'] > best_value:
                 best_value = child_result['value']
                 best_move = [potential_cell]
-                if child_result["move"] != None:
-                    for move in child_result['move']:
-                        best_move.append(move)
-            # elif child_result['value'] == best_value:
-            #     best_move.append(potential_cell)
+            elif child_result['value'] == best_value:
+                best_move.append(potential_cell)
             alpha = max(alpha,best_value)
             if beta <= alpha:
+                break
+            #time_limit break
+            if time.time() - ai_timer >= TIME_LIMIT:
                 break
         return {"value":best_value,"move":best_move}
     elif ai_play == Cell_Type.WHITE:
@@ -218,16 +234,24 @@ def minimax_alpha_beta_pruning(level, alpha, beta, grid, last_move, potential_ce
             child_last_move = {"position":potential_cell,"type":ai_play,"number":last_move['number']+1}
             child_result = minimax_alpha_beta_pruning(level - 1, alpha, beta, child_grid, 
                                                             child_last_move, child_potential_cells)
+            #Get last best result each level
+            # if child_result['value'] < best_value:
+            #     best_value = child_result['value']
+            #     best_move = [potential_cell]
+            #     if child_result["move"] != None:
+            #         for move in child_result['move']:
+            #             best_move.append(move)
+            #Get all best result
             if child_result['value'] < best_value:
                 best_value = child_result['value']
                 best_move = [potential_cell]
-                if child_result["move"] != None:
-                    for move in child_result['move']:
-                        best_move.append(move)
-            # elif child_result['value'] == best_value:
-            #     best_move.append(potential_cell)
+            elif child_result['value'] == best_value:
+                best_move.append(potential_cell)
             beta = min(beta,best_value)
             if beta <= alpha:
+                break
+            #time_limit break
+            if time.time() - ai_timer >= TIME_LIMIT:
                 break
         return {"value":best_value,"move":best_move}
 
