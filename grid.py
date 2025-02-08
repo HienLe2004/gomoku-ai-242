@@ -17,7 +17,7 @@ class Evaluate_Sequence(Enum):
     BLACK_3 = 100_000
     BLACK_2 = 1_000
     BLACK_1 = 10
-    COEFFICIENT = 1.5
+    COEFFICIENT = 2
 
 class Grid:
     def __init__(self, screen, grid_size=(10, 10), cell_size=(50, 50), position=(300, 300)):
@@ -59,14 +59,14 @@ class Grid:
             return
         if current_play is Cell_Type.WHITE:
             if self.white_AI:
-                print("#AI played white")
+                print(f"#AI played white {self.last_move['number'] + 1}")
             else:
-                print("#Human played white")
+                print(f"#Human played white {self.last_move['number'] + 1}")
         elif current_play is Cell_Type.BLACK:
             if self.black_AI:
-                print("#AI played black")
+                print(f"#AI played black {self.last_move['number'] + 1}")
             else:
-                print("#Human played black")
+                print(f"#Human played black {self.last_move['number'] + 1}")
         self.cells[grid_position[0]][grid_position[1]].type = current_play
         self.cells[grid_position[0]][grid_position[1]].number = self.last_move['number'] + 1
         self.cells[grid_position[0]][grid_position[1]].is_potential = False
@@ -76,12 +76,12 @@ class Grid:
                            "number": self.last_move['number'] + 1}
         check_ending = check_ending_move(cell_data, self.last_move)
         self.state = check_ending['state']
-        value = 0
-        if check_ending['result'] == True:
-            value = check_ending['value']
-        else:
-            value = evaluate_grid(cell_data, self.last_move)
-        print(f'current value of grid: {value}')
+        # value = 0
+        # if check_ending['result'] == True:
+        #     value = check_ending['value']
+        # else:
+        #     value = evaluate_grid(cell_data, self.last_move)
+        # print(f'Grid\'s value: {value}')
         self.potential_cells = update_potential_cells_around(cell_data, grid_position, self.potential_cells)
         #Show potential cells
         for cell in self.potential_cells:
