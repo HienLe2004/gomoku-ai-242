@@ -19,6 +19,7 @@ class Evaluate_Sequence(Enum):
     BLACK_1 = 10
     COEFFICIENT = 3
 HIGHEST_TREE_LEVEL = 4
+UNLOCKED_AI_DISTANCE = 1
 TIME_LIMIT = 60
 ai_timer = 0
 
@@ -36,12 +37,13 @@ class Grid:
             for col in range(grid_size[1]):
                 cells_in_row.append(Cell(self, (row,col), self.cell_size, 0))
             self.cells.append(cells_in_row)
-        self.state = Game_State.WAIT_BLACK
-        self.last_move = {"position":(-1, -1), "type": Cell_Type.WHITE, "number": 0} 
+        self.state = Game_State.WAIT_WHITE
+        self.last_move = {"position":(-1, -1), "type": Cell_Type.BLACK, "number": 0} 
         self.white_AI = False
         self.black_AI = False
         self.AI_start_solving = False
         self.potential_cells = []
+        self.values = {Cell_Type.BLACK: 0, Cell_Type.WHITE:0}
     def reset_grid(self):
         for cell in self.potential_cells:
             self.cells[cell[0]][cell[1]].is_potential = False
@@ -85,6 +87,13 @@ class Grid:
         # else:
         #     value = evaluate_grid(cell_data, self.last_move)
         # print(f'Grid\'s value: {value}')
+        # value = 0
+        self.values = evaluate_grid_optimized(cell_data, self.values, self.last_move['position'])
+        # if self.last_move['type'] == Cell_Type.WHITE:
+        #     value = self.values[Cell_Type.WHITE] + self.values[Cell_Type.BLACK] * Evaluate_Sequence.COEFFICIENT.value
+        # else:
+        #     value = self.values[Cell_Type.WHITE] * Evaluate_Sequence.COEFFICIENT.value + self.values[Cell_Type.BLACK]
+        # print(f'Grid\'s value: {value}')
         self.potential_cells = update_potential_cells_around(cell_data, grid_position, self.potential_cells)
         #Show potential cells
         for cell in self.potential_cells:
@@ -112,14 +121,14 @@ class Grid:
                                                     alpha=-Evaluate_Sequence.BLACK_5_2.value*4,
                                                     beta=Evaluate_Sequence.BLACK_5_2.value*4,
                                                     grid=grid,
+                                                    values=self.values,
                                                     last_move=self.last_move,
                                                     potential_cells=self.potential_cells)
                 end_time = time.time()
                 thinking_time = end_time - start_time
                 print(f'Thinking time: {thinking_time:.4f}')
                 print(result)
-                # self.play_at(result['move'][0])
-                self.play_at(result['move'][random.randint(0, len(result['move']) - 1)])
+                self.play_at(result['move'][0])
         elif ai_play is Cell_Type.BLACK:
             if self.black_AI:
                 print("#AI-black is choosing the best move....")
@@ -127,17 +136,17 @@ class Grid:
                 ai_timer = time.time()
                 start_time = time.time()
                 result = minimax_alpha_beta_pruning(level=HIGHEST_TREE_LEVEL,
-                                                    alpha=-Evaluate_Sequence.BLACK_5_2.value*4,
-                                                    beta=Evaluate_Sequence.BLACK_5_2.value*4,
+                                                    alpha=-Evaluate_Sequence.BLACK_5_2.value*HIGHEST_TREE_LEVEL,
+                                                    beta=Evaluate_Sequence.BLACK_5_2.value*HIGHEST_TREE_LEVEL,
                                                     grid=grid,
+                                                    values=self.values,
                                                     last_move=self.last_move,
                                                     potential_cells=self.potential_cells)
                 end_time = time.time()
                 thinking_time = end_time - start_time
                 print(f'Thinking time: {thinking_time:.4f}')
                 print(result)
-                # self.play_at(result['move'][0])
-                self.play_at(result['move'][random.randint(0, len(result['move']) - 1)])
+                self.play_at(result['move'][0])
 
     def draw(self):
         self.grid_surf.fill((135,62,35))
@@ -161,16 +170,9 @@ class Grid:
                 self.AI_start_solving = False
 
 def update_potential_cells_around(grid, grid_position, potential_cells):
-    surrounding_cells = [top_cell(grid_position,1),
-                        right_cell(grid_position,1),
-                        bottom_cell(grid_position,1),
-                        left_cell(grid_position,1),
-                        top_left_cell(grid_position,1),
-                        top_right_cell(grid_position,1),
-                        bottom_right_cell(grid_position,1),
-                        bottom_left_cell(grid_position,1)]
-    new_potential_cells = [cell for cell in potential_cells if (cell not in surrounding_cells and grid_position != cell)]
-    for cell in surrounding_cells:
+    surrounded_cells = get_surrounded_cells(grid_position, UNLOCKED_AI_DISTANCE)
+    new_potential_cells = [cell for cell in potential_cells if (cell not in surrounded_cells and grid_position != cell)]
+    for cell in surrounded_cells:
         if is_valid_cell(cell):
             if grid[cell[0]][cell[1]] is Cell_Type.EMPTY:
                 new_potential_cells.append(cell)
@@ -179,7 +181,7 @@ def update_potential_cells_around(grid, grid_position, potential_cells):
                                                          abs(cell[1]-grid_position[1])))
     # print(f'sorted {sorted_potential_cells}')
     return sorted_potential_cells
-def minimax_alpha_beta_pruning(level, alpha, beta, grid, last_move, potential_cells):
+def minimax_alpha_beta_pruning(level, alpha, beta, grid, values, last_move, potential_cells):
     ai_play = Cell_Type.EMPTY
     if last_move['type'] == Cell_Type.BLACK:
         ai_play = Cell_Type.WHITE
@@ -191,65 +193,65 @@ def minimax_alpha_beta_pruning(level, alpha, beta, grid, last_move, potential_ce
     if check_ending['result'] == True:
         return {"value":check_ending['value'] * level, "move":None}
     if level == 1:
-        return {"value":evaluate_grid(grid, last_move), "move":None}
+        value = 0
+        if ai_play == Cell_Type.BLACK:
+            value = values[Cell_Type.BLACK] * Evaluate_Sequence.COEFFICIENT.value
+            value += values[Cell_Type.WHITE]
+        else:
+            value = values[Cell_Type.WHITE] * Evaluate_Sequence.COEFFICIENT.value
+            value += values[Cell_Type.BLACK]
+        return {"value": value, "move":None}
+        # return {"value":evaluate_grid(grid, last_move), "move":None}
     if ai_play == Cell_Type.BLACK:
         best_value = -Evaluate_Sequence.BLACK_5_2.value*level-1
-        best_move = []
+        best_move = None
         for potential_cell in potential_cells:
             child_grid = [[cell for cell in row] for row in grid]
             child_grid[potential_cell[0]][potential_cell[1]] = ai_play
             child_potential_cells = [cell for cell in potential_cells]
             child_potential_cells = update_potential_cells_around(child_grid,potential_cell,child_potential_cells)
             child_last_move = {"position":potential_cell,"type":ai_play,"number":last_move['number']+1}
-            child_result = minimax_alpha_beta_pruning(level - 1, alpha, beta, child_grid, 
+            child_values = evaluate_grid_optimized(child_grid, values, potential_cell)
+            child_result = minimax_alpha_beta_pruning(level - 1, alpha, beta, child_grid, child_values,
                                                             child_last_move, child_potential_cells)
-            #Get last best result each level
-            # if child_result['value'] > best_value:
-            #     best_value = child_result['value']
-            #     best_move = [potential_cell]
-            #     if child_result["move"] != None:
-            #         for move in child_result['move']:
-            #             best_move.append(move)
-            #Get all best result
-            if child_result['value'] > best_value:
-                best_value = child_result['value']
-                best_move = [potential_cell]
-            elif child_result['value'] == best_value:
-                best_move.append(potential_cell)
+            old_best_value = best_value
+            best_value = max(best_value, child_result['value'])
             alpha = max(alpha,best_value)
             if beta <= alpha:
                 break
+            #Get last best result each level
+            if child_result['value'] > old_best_value:
+                best_move = [potential_cell]
+                if child_result["move"] != None:
+                    for move in child_result['move']:
+                        best_move.append(move)
             #time_limit break
             if time.time() - ai_timer >= TIME_LIMIT:
                 break
         return {"value":best_value,"move":best_move}
     elif ai_play == Cell_Type.WHITE:
         best_value = Evaluate_Sequence.BLACK_5_2.value*level+1
-        best_move = []
+        best_move = None
         for potential_cell in potential_cells:
             child_grid = [[cell for cell in row] for row in grid]
             child_grid[potential_cell[0]][potential_cell[1]] = ai_play
             child_potential_cells = [cell for cell in potential_cells]
             child_potential_cells = update_potential_cells_around(child_grid,potential_cell,child_potential_cells)
             child_last_move = {"position":potential_cell,"type":ai_play,"number":last_move['number']+1}
-            child_result = minimax_alpha_beta_pruning(level - 1, alpha, beta, child_grid, 
+            child_values = evaluate_grid_optimized(child_grid, values, potential_cell)
+            child_result = minimax_alpha_beta_pruning(level - 1, alpha, beta, child_grid, child_values,
                                                             child_last_move, child_potential_cells)
-            #Get last best result each level
-            # if child_result['value'] < best_value:
-            #     best_value = child_result['value']
-            #     best_move = [potential_cell]
-            #     if child_result["move"] != None:
-            #         for move in child_result['move']:
-            #             best_move.append(move)
-            #Get all best result
-            if child_result['value'] < best_value:
-                best_value = child_result['value']
-                best_move = [potential_cell]
-            elif child_result['value'] == best_value:
-                best_move.append(potential_cell)
+            old_best_value = best_value
+            best_value = min(best_value,child_result['value'])
             beta = min(beta,best_value)
             if beta <= alpha:
                 break
+            #Get last best result each level
+            if child_result['value'] < old_best_value:
+                best_move = [potential_cell]
+                if child_result["move"] != None:
+                    for move in child_result['move']:
+                        best_move.append(move)
             #time_limit break
             if time.time() - ai_timer >= TIME_LIMIT:
                 break
@@ -453,6 +455,20 @@ def bottom_right_cell(grid_position, step):
     return (grid_position[0] + step, grid_position[1] + step)
 def bottom_left_cell(grid_position, step):
     return (grid_position[0] + step, grid_position[1] - step)
+def get_surrounded_cells(grid_position, distance):
+    cells = []
+    for layer in range(1, distance + 1):
+        cells.append(top_left_cell(grid_position, layer))
+        cells.append(top_left_cell(grid_position, -layer))
+        cells.append(top_right_cell(grid_position, layer))
+        cells.append(top_right_cell(grid_position, -layer))
+        for i in range (-layer + 1, layer):
+            cells.append((grid_position[0] + i, grid_position[1] + layer))
+            cells.append((grid_position[0] + i, grid_position[1] - layer))
+            cells.append((grid_position[0] + layer, grid_position[1] + i))
+            cells.append((grid_position[0] - layer, grid_position[1] + i))
+    return cells
+
 
 def evaluate_grid(grid, last_move):
     value = 0
@@ -549,7 +565,7 @@ def evaluate_top_right (grid, last_move):
             pattern.append(grid[cell[0] + index][cell[1] - index])
             count[grid[cell[0] + index][cell[1] - index]] = count[grid[cell[0] + index][cell[1] - index]] + 1
         index = 4
-        while cell[0] +index < 15 and cell[1] -index > 0:
+        while cell[0] +index < 15 and cell[1] -index >= 0:
             pattern.append(grid[cell[0] +index][cell[1] -index])
             count[grid[cell[0] +index][cell[1] -index]] = count[grid[cell[0] +index][cell[1] -index]] + 1
             modified_value = evaluate_pattern(count)
@@ -565,6 +581,141 @@ def evaluate_top_right (grid, last_move):
     return value         
 def evaluate_direction(direction, grid, last_move):
     return direction(grid, last_move)
+
+def evaluate_horizontal_line (grid, position):
+    sub_values = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0}
+    count = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0, Cell_Type.EMPTY: 0}
+    pattern = []
+    row = position[0]
+    for col in range(4):
+        pattern.append(grid[row][col])
+        count[grid[row][col]] += 1
+    for col in range(4, 15):
+        pattern.append(grid[row][col])
+        count[grid[row][col]] += 1
+        value = evaluate_pattern(count)
+        if value > 0:
+            sub_values[Cell_Type.BLACK] += value
+        elif value < 0:
+            sub_values[Cell_Type.WHITE] += value
+        if len(pattern) == 5:
+            removed_symbol = pattern.pop(0)
+            count[removed_symbol] -= 1
+    # print(sub_values)
+    return sub_values
+def evaluate_vertical_line (grid, position):
+    sub_values = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0}
+    count = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0, Cell_Type.EMPTY: 0}
+    pattern = []
+    col = position[1]
+    for row in range(4):
+        pattern.append(grid[row][col])
+        count[grid[row][col]] += 1
+    for row in range(4, 15):
+        pattern.append(grid[row][col])
+        count[grid[row][col]] += 1
+        value = evaluate_pattern(count)
+        if value > 0:
+            sub_values[Cell_Type.BLACK] += value
+        elif value < 0:
+            sub_values[Cell_Type.WHITE] += value
+        if len(pattern) == 5:
+            removed_symbol = pattern.pop(0)
+            count[removed_symbol] -= 1
+    # print(sub_values)
+    return sub_values
+def evaluate_top_left_line(grid, position):
+    sub_values = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0}
+    row = position[0]
+    col = position[1]
+    while row != 0 and col != 0:
+        col -= 1
+        row -= 1
+    count = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0, Cell_Type.EMPTY: 0}
+    pattern = []
+    index = 0
+    while row + index < 15 and col + index < 15 and index < 4:
+        pattern.append(grid[row + index][col + index])
+        count[grid[row + index][col + index]] += 1
+        index += 1
+    index = 4
+    while row + index < 15 and col + index < 15:
+        pattern.append(grid[row + index][col + index])
+        count[grid[row + index][col + index]] += 1
+        value = evaluate_pattern(count)
+        if value > 0:
+            sub_values[Cell_Type.BLACK] += value
+        elif value < 0:
+            sub_values[Cell_Type.WHITE] += value
+        if len(pattern) == 5:
+            removed_symbol = pattern.pop(0)
+            count[removed_symbol] -= 1
+        index += 1   
+    # print(sub_values)
+    return sub_values  
+def evaluate_top_right_line(grid, position):
+    sub_values = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0}
+    row = position[0]
+    col = position[1]
+    while row != 0 and col != 14:
+        col += 1
+        row -= 1
+    count = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0, Cell_Type.EMPTY: 0}
+    pattern = []
+    index = 0
+    while row + index < 15 and col - index > -1 and index < 4:
+        pattern.append(grid[row + index][col - index])
+        count[grid[row + index][col - index]] += 1
+        index += 1
+    index = 4
+    while row + index < 15 and col - index > -1:
+        pattern.append(grid[row + index][col - index])
+        count[grid[row + index][col - index]] += 1
+        value = evaluate_pattern(count)
+        if value > 0:
+            sub_values[Cell_Type.BLACK] += value
+        elif value < 0:
+            sub_values[Cell_Type.WHITE] += value
+        if len(pattern) == 5:
+            removed_symbol = pattern.pop(0)
+            count[removed_symbol] -= 1
+        index += 1    
+    # print(sub_values)
+    return sub_values 
+def evaluate_grid_optimized(grid, old_values, position):
+    old_grid = [[cell for cell in row] for row in grid]
+    old_grid[position[0]][position[1]] = Cell_Type.EMPTY
+    old_sub_values = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0}
+    old_horizontal_line_values = evaluate_horizontal_line(old_grid, position)
+    old_sub_values[Cell_Type.BLACK] += old_horizontal_line_values[Cell_Type.BLACK]
+    old_sub_values[Cell_Type.WHITE] += old_horizontal_line_values[Cell_Type.WHITE]
+    old_vertical_line_values = evaluate_vertical_line(old_grid, position)
+    old_sub_values[Cell_Type.BLACK] += old_vertical_line_values[Cell_Type.BLACK]
+    old_sub_values[Cell_Type.WHITE] += old_vertical_line_values[Cell_Type.WHITE]
+    old_top_left_line_values = evaluate_top_left_line(old_grid, position)
+    old_sub_values[Cell_Type.BLACK] += old_top_left_line_values[Cell_Type.BLACK]
+    old_sub_values[Cell_Type.WHITE] += old_top_left_line_values[Cell_Type.WHITE]
+    old_top_right_line_values = evaluate_top_right_line(old_grid, position)
+    old_sub_values[Cell_Type.BLACK] += old_top_right_line_values[Cell_Type.BLACK]
+    old_sub_values[Cell_Type.WHITE] += old_top_right_line_values[Cell_Type.WHITE]
+    new_sub_values = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0}
+    new_horizontal_line_values = evaluate_horizontal_line(grid, position)
+    new_sub_values[Cell_Type.BLACK] += new_horizontal_line_values[Cell_Type.BLACK]
+    new_sub_values[Cell_Type.WHITE] += new_horizontal_line_values[Cell_Type.WHITE]
+    new_vertical_line_values = evaluate_vertical_line(grid, position)
+    new_sub_values[Cell_Type.BLACK] += new_vertical_line_values[Cell_Type.BLACK]
+    new_sub_values[Cell_Type.WHITE] += new_vertical_line_values[Cell_Type.WHITE]
+    new_top_left_line_values = evaluate_top_left_line(grid, position)
+    new_sub_values[Cell_Type.BLACK] += new_top_left_line_values[Cell_Type.BLACK]
+    new_sub_values[Cell_Type.WHITE] += new_top_left_line_values[Cell_Type.WHITE]
+    new_top_right_line_values = evaluate_top_right_line(grid, position)
+    new_sub_values[Cell_Type.BLACK] += new_top_right_line_values[Cell_Type.BLACK]
+    new_sub_values[Cell_Type.WHITE] += new_top_right_line_values[Cell_Type.WHITE]
+    new_values = {Cell_Type.BLACK: 0, Cell_Type.WHITE: 0}
+    new_values[Cell_Type.BLACK] = old_values[Cell_Type.BLACK] - old_sub_values[Cell_Type.BLACK] + new_sub_values[Cell_Type.BLACK]
+    new_values[Cell_Type.WHITE] = old_values[Cell_Type.WHITE] - old_sub_values[Cell_Type.WHITE] + new_sub_values[Cell_Type.WHITE]
+    # print(f"Position {position}, old values {old_values}, new values {new_values}")
+    return new_values
 def evaluate_pattern(pattern):
     if pattern[Cell_Type.EMPTY] == 5:
         return 0
