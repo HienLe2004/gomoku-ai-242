@@ -34,8 +34,10 @@ class Cell:
                 self.grid.play_at(self.grid_position)
 
     def draw(self):
-        pygame.draw.rect(surface=self.grid.grid_surf, color=self.grid_color, rect=self.cell_rect.scale_by(1, 0.05))
-        pygame.draw.rect(surface=self.grid.grid_surf, color=self.grid_color, rect=self.cell_rect.scale_by(0.05, 1))
+        pygame.draw.rect(surface=self.grid.grid_surf, color=self.grid_color, rect=self.cell_rect.scale_by(1, 0.04))
+        pygame.draw.rect(surface=self.grid.grid_surf, color=self.grid_color, rect=self.cell_rect.scale_by(0.04, 1))
+        if self.grid_position in [(7,7),(3,3),(11, 11),(3,11),(11,3)]:
+            pygame.draw.circle(surface=self.grid.grid_surf, color=self.grid_color, center=self.position, radius=self.size[0] * 0.1)
         if self.type == Cell_Type.BLACK:
             pygame.draw.circle(surface=self.grid.grid_surf, color=self.black_color, center=self.position, radius=self.size[0] * 0.3)
             font = pygame.font.Font('freesansbold.ttf', int(self.size[0]*0.2))
