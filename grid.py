@@ -247,8 +247,8 @@ def minimax_alpha_beta_pruning(level, alpha, beta, grid, values, last_move, pote
             child_potential_cells = update_potential_cells_around(child_grid,potential_cell,child_potential_cells)
             child_last_move = {"position":potential_cell,"type":ai_play,"number":last_move['number']+1}
             child_values = evaluate_grid(child_grid, values, potential_cell)
-            if (level == HIGHEST_TREE_LEVEL - 1):
-                print(f"Parent {last_move['position']} {values}, child {potential_cell} {child_values}")
+            # if (level == HIGHEST_TREE_LEVEL - 1):
+            #     print(f"Parent {last_move['position']} {values}, child {potential_cell} {child_values}")
             child_result = minimax_alpha_beta_pruning(level - 1, alpha, beta, child_grid, child_values,
                                                             child_last_move, child_potential_cells)
             old_best_value = best_value
@@ -265,8 +265,8 @@ def minimax_alpha_beta_pruning(level, alpha, beta, grid, values, last_move, pote
             #time_limit break
             if time.time() - ai_timer >= TIME_LIMIT:
                 break
-        if (level == HIGHEST_TREE_LEVEL - 1):
-            print(f"Last move at {last_move['position']}, best black move {best_move}, value {best_value}")
+        # if (level == HIGHEST_TREE_LEVEL - 1):
+        #     print(f"Last move at {last_move['position']}, best black move {best_move}, value {best_value}")
         return {"value":best_value,"move":best_move}
     elif ai_play == Cell_Type.WHITE:
         # best_value = Evaluate_Sequence.BLACK_5_2.value*level+1
