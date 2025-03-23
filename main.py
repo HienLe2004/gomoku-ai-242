@@ -1,4 +1,5 @@
 from game import *
-if __name__ == '__main__':
+def main():
     game = Game()
     game.run()
+main()

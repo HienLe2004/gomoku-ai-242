@@ -26,7 +26,6 @@ class Evaluate_Sequence(Enum):
     ONE_4_1 = 20
     ONE_4_2 = 12
     COEFFICIENT = 4
-HIGHEST_TREE_LEVEL = 4
 UNLOCKED_AI_DISTANCE = 2
 TIME_LIMIT = 60
 ai_timer = 0
@@ -52,6 +51,8 @@ class Grid:
         self.AI_start_solving = False
         self.potential_cells = []
         self.values = [0,0]
+        self.black_highest_tree_level = 4
+        self.white_highest_tree_level = 4  
     def reset_grid(self):
         for cell in self.potential_cells:
             self.cells[cell[0]][cell[1]].is_potential = False
@@ -137,9 +138,9 @@ class Grid:
                 elif check_defend_result['result'] == True:
                     move = check_defend_result['move']
                 else:
-                    result = minimax_alpha_beta_pruning(level=HIGHEST_TREE_LEVEL,
-                                                        alpha=-Evaluate_Sequence.FIVE_2.value*HIGHEST_TREE_LEVEL,
-                                                        beta=Evaluate_Sequence.FIVE_2.value*HIGHEST_TREE_LEVEL,
+                    result = minimax_alpha_beta_pruning(level=self.white_highest_tree_level,
+                                                        alpha=-Evaluate_Sequence.FIVE_2.value*self.white_highest_tree_level,
+                                                        beta=Evaluate_Sequence.FIVE_2.value*self.white_highest_tree_level,
                                                         grid=grid,
                                                         values=self.values,
                                                         last_move=self.last_move,
@@ -167,9 +168,9 @@ class Grid:
                 elif check_defend_result['result'] == True:
                     move = check_defend_result['move']
                 else:
-                    result = minimax_alpha_beta_pruning(level=HIGHEST_TREE_LEVEL,
-                                                        alpha=-Evaluate_Sequence.FIVE_2.value*HIGHEST_TREE_LEVEL,
-                                                        beta=Evaluate_Sequence.FIVE_2.value*HIGHEST_TREE_LEVEL,
+                    result = minimax_alpha_beta_pruning(level=self.black_highest_tree_level,
+                                                        alpha=-Evaluate_Sequence.FIVE_2.value*self.black_highest_tree_level,
+                                                        beta=Evaluate_Sequence.FIVE_2.value*self.black_highest_tree_level,
                                                         grid=grid,
                                                         values=self.values,
                                                         last_move=self.last_move,
@@ -279,8 +280,8 @@ def minimax_alpha_beta_pruning(level, alpha, beta, grid, values, last_move, pote
             child_potential_cells = update_potential_cells_around(child_grid,potential_cell,child_potential_cells)
             child_last_move = {"position":potential_cell,"type":ai_play,"number":last_move['number']+1}
             child_values = evaluate_grid(child_grid, values, potential_cell)
-            if (level == HIGHEST_TREE_LEVEL - 1):
-                print(f"Parent {last_move['position']} {values}, child {potential_cell} {child_values}")
+            # if (level == HIGHEST_TREE_LEVEL - 1):
+            #     print(f"Parent {last_move['position']} {values}, child {potential_cell} {child_values}")
             child_result = minimax_alpha_beta_pruning(level - 1, alpha, beta, child_grid, child_values,
                                                             child_last_move, child_potential_cells)
             old_best_value = best_value
@@ -299,8 +300,8 @@ def minimax_alpha_beta_pruning(level, alpha, beta, grid, values, last_move, pote
             #time_limit break
             if time.time() - ai_timer >= TIME_LIMIT:
                 break
-        if (level == HIGHEST_TREE_LEVEL - 1):
-            print(f"Last move at {last_move['position']}, best white move {best_move}, value {best_value}")
+        # if (level == HIGHEST_TREE_LEVEL - 1):
+        #     print(f"Last move at {last_move['position']}, best white move {best_move}, value {best_value}")
         return {"value":best_value,"move":best_move}
 
 def check_ending_move(grid, last_move):

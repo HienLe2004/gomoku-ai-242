@@ -5,20 +5,34 @@
         {
             "name": "electrolize",
             "size": "24",
-            "regular_path": "fonts/Electrolize-Regular.ttf"
+            "regular_path" : "fonts/Electrolize-Regular.ttf"
+        }
+        ,
+        "colours":
+        {
+            "normal_text": "#FFFFFF",
+            "normal_bg": "#A43626",
+            "hovered_bg": "#B96418",
+            "normal_border": "#450000",
+            "hovered_border": "#450000",
+            "active_bg": "#450000"
         }
     },
     "drop_down_menu":
     {
         "misc":
         {
-            "expand_direction": "down"
+            "expand_direction": "down",
+           "border_width": "1"
         },
 
         "colours":
         {
-            "normal_bg": "#25292e",
-            "hovered_bg": "#35393e"
+            "normal_bg": "#A43626",
+            "hovered_bg": "#B96418",
+            "normal_border": "#450000",
+            "selected_bg": "#450000",
+            "active_bg": "#450000"
         }
     },
     "drop_down_menu.#selected_option":
@@ -27,12 +41,61 @@
         {
            "border_width": "1"
         }
+        ,
+
+        "colours":
+        {
+            "normal_bg": "#A43626",
+            "hovered_bg": "#B96418",
+            "normal_border": "#450000",
+            "active_bg": "#450000"
+        }
+    },
+    "drop_down_menu.#expand_button":
+    {
+        "misc":
+        {
+           "border_width": "1"
+        }
+        ,
+        "colours":
+        {
+            "normal_bg": "#A43626",
+            "hovered_bg": "#B96418",
+            "normal_border": "#450000",
+            "selected_bg": "#450000",
+            "active_bg": "#450000"
+        }
     },
     "drop_down_menu.#drop_down_options_list":
     {
         "misc":
         {
             "list_item_height": "30"
+        }
+        ,
+
+        "colours":
+        {
+            "normal_bg": "#A43626",
+            "hovered_bg": "#B96418",
+            "normal_border": "#450000"
+        }
+    },
+    "drop_down_menu.#drop_down_options_list.button":
+    {
+        "misc":
+        {
+            "list_item_height": "30"
+        }
+        ,
+
+        "colours":
+        {
+            "normal_bg": "#A43626",
+            "hovered_bg": "#B96418",
+            "selected_bg": "#450000",
+            "normal_border": "#450000"
         }
     }
 }
